@@ -40,6 +40,5 @@ class ImageField(SorlImageField):
         "Returns field's value just before saving."
         file = super(ImageField, self).pre_save(model_instance, add)
         resize_image(file)
-        print self.south_field_triple()
         return file
 

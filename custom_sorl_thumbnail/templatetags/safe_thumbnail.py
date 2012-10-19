@@ -9,51 +9,20 @@ from sorl.thumbnail.templatetags.thumbnail import ThumbnailNode
 from sorl.thumbnail.base import ThumbnailBackend
 from sorl.thumbnail.images import ImageFile
 from sorl.thumbnail import default
-
+from custom_sorl_thumbnail.backends import SafeSEOThumbnailBackend
 
 register = Library()
 kw_pat = re.compile(r'^(?P<key>[\w]+)=(?P<value>.+)$')
 logger = logging.getLogger('sorl.thumbnail')
 
-
-class CustomThumbnailBackend(ThumbnailBackend):
-
-    def get_thumbnail(self, file_, geometry_string, **options):
-        """
-        Returns thumbnail as an ImageFile instance for file with geometry and
-        options given. First it will try to get it from the key value store,
-        secondly it will create it.
-        """
-        source = ImageFile(file_)
-        for key, value in self.default_options.iteritems():
-            options.setdefault(key, value)
-        options['mtime'] = os.path.getmtime(source.storage.path(source))###customization
-        name = self._get_thumbnail_filename(source, geometry_string, options)
-        thumbnail = ImageFile(name, default.storage)
-        cached = default.kvstore.get(thumbnail)
-        if cached and cached.exists():###customization
-            return cached
-        if not thumbnail.exists():
-            # We have to check exists() because the Storage backend does not
-            # overwrite in some implementations.
-            source_image = default.engine.get_image(source)
-            # We might as well set the size since we have the image in memory
-            size = default.engine.get_image_size(source_image)
-            source.set_size(size)
-            self._create_thumbnail(source_image, geometry_string, options,
-                                   thumbnail)
-        # If the thumbnail exists we don't create it, the other option is
-        # to delete and write but this could lead to race conditions so I
-        # will just leave that out for now.
-        default.kvstore.get_or_set(source)
-        default.kvstore.set(thumbnail, source)
-        return thumbnail
-        
-custom_backend = CustomThumbnailBackend()
-
+custom_backend = SafeSEOThumbnailBackend()
 
 #@register.tag('thumbnail')
 class SafeThumbnailNode(ThumbnailNode):
+    '''
+    This template tag ignores settings.THUMBNAIL_BACKEND
+    It always uses the SafeSEOThumbnailBackend. 
+    '''
     child_nodelists = ('nodelist_file', 'nodelist_empty')
     error_msg = ('Syntax error. Expected: ``thumbnail source geometry '
                  '[key1=val1 key2=val2...] as var``')

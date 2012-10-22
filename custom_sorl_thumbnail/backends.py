@@ -66,6 +66,17 @@ class SafeSEOThumbnailBackend(SEOThumbnailBackend):
             # We might as well set the size since we have the image in memory
             size = default.engine.get_image_size(source_image)
             source.set_size(size)
+            ### customization: race condition, do not raise an OSError when the dir exists.
+            # see sorl.thumbnail.images.ImageFile.write, it's not safe to simply throw
+            # /sub/dir/name.jpg to django.core.files.storage.FileSystemStorage._save 
+            full_path = thumbnail.storage.path(name)
+            directory = os.path.dirname(full_path)
+            if not os.path.exists(directory):
+                try:
+                    os.makedirs(directory)
+                except OSError:
+                    pass
+            ### end of customization
             self._create_thumbnail(source_image, geometry_string, options,
                                    thumbnail)
         # If the thumbnail exists we don't create it, the other option is

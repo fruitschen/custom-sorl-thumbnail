@@ -14,7 +14,7 @@ def resize_image(file):
 
     try:
         im = Image.open(file.path)
-    except IOError:
+    except:
         im = None
     if im:
         current_width, current_height = im.size

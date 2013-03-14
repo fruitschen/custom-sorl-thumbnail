@@ -1,5 +1,5 @@
 import os, re
-from PIL import Image, ImageFilter, ImageChops
+from PIL import Image, ImageFilter, ImageChops, ImageOps
 from sorl.thumbnail.base import ThumbnailBackend
 from django.template.defaultfilters import slugify
 from django.conf import settings
@@ -92,6 +92,11 @@ class SafeSEOThumbnailBackend(SEOThumbnailBackend):
 
 def autocrop(im, requested_size, opts):
     if 'autocrop' in opts:
+        inverted_image = ImageOps.invert(im)
+        bbox = inverted_image.getbbox()
+        if bbox:
+            im = im.crop(bbox)
+        '''
         bw = im.convert("1")
         bw = bw.filter(ImageFilter.MedianFilter)
         # white bg
@@ -100,5 +105,6 @@ def autocrop(im, requested_size, opts):
         bbox = diff.getbbox()
         if bbox:
             im = im.crop(bbox)
+        '''
     return im
 

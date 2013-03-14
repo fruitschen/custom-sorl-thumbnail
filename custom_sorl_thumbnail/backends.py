@@ -1,4 +1,5 @@
 import os, re
+from PIL import Image, ImageFilter, ImageChops
 from sorl.thumbnail.base import ThumbnailBackend
 from django.template.defaultfilters import slugify
 from django.conf import settings
@@ -20,7 +21,6 @@ class SEOThumbnailBackend(ThumbnailBackend):
         split_path.insert(-1, geometry_string)
 
         #make some subdirs to avoid putting too many files in a single dir. 
-        print options
         key = tokey(source.key, geometry_string, serialize(options))
         split_path.insert(-1, key[:2])
         split_path.insert(-1, key[2:4])
@@ -63,6 +63,9 @@ class SafeSEOThumbnailBackend(SEOThumbnailBackend):
             # We have to check exists() because the Storage backend does not
             # overwrite in some implementations.
             source_image = default.engine.get_image(source)
+            size = default.engine.get_image_size(source_image)
+            if options.get('autocrop', None):
+                source_image = autocrop(source_image, geometry_string, options)
             # We might as well set the size since we have the image in memory
             size = default.engine.get_image_size(source_image)
             source.set_size(size)
@@ -85,4 +88,17 @@ class SafeSEOThumbnailBackend(SEOThumbnailBackend):
         default.kvstore.get_or_set(source)
         default.kvstore.set(thumbnail, source)
         return thumbnail
+
+
+def autocrop(im, requested_size, opts):
+    if 'autocrop' in opts:
+        bw = im.convert("1")
+        bw = bw.filter(ImageFilter.MedianFilter)
+        # white bg
+        bg = Image.new("1", im.size, 255)
+        diff = ImageChops.difference(bw, bg)
+        bbox = diff.getbbox()
+        if bbox:
+            im = im.crop(bbox)
+    return im
 

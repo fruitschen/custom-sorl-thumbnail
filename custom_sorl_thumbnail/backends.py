@@ -1,4 +1,5 @@
 import os, re
+import ImageEnhance
 from PIL import Image, ImageFilter, ImageChops, ImageOps
 from sorl.thumbnail.base import ThumbnailBackend
 from django.template.defaultfilters import slugify
@@ -92,7 +93,8 @@ class SafeSEOThumbnailBackend(SEOThumbnailBackend):
 
 def autocrop(im, requested_size, opts):
     if 'autocrop' in opts:
-        inverted_image = ImageOps.invert(im)
+        image = ImageEnhance.Brightness(im).enhance(1.12)
+        inverted_image = ImageOps.invert(image)
         bbox = inverted_image.getbbox()
         if bbox:
             im = im.crop(bbox)

@@ -18,7 +18,12 @@ class SEOThumbnailBackend(ThumbnailBackend):
         """
         Computes the destination filename.
         """
-        split_path = re.sub(r'^%s%s?' % (source.storage.path(''), os.sep), '', source.name).split(os.sep)
+        try:
+            root_path = source.storage.path('')
+        except: 
+            #some storage backends do not support path() 
+            root_path = ''
+        split_path = re.sub(r'^%s%s?' % (root_path, os.sep), '', source.name).split(os.sep)
         split_path.insert(-1, geometry_string)
 
         #make some subdirs to avoid putting too many files in a single dir. 
